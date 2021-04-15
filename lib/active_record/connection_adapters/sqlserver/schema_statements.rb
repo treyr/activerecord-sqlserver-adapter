@@ -528,16 +528,25 @@ module ActiveRecord
         end
 
         # === SQLServer Specific (Misc Helpers) ========================= #
+        #
+        def get_table_name_from_sql(sql)
+          if sql =~ /^\s*(INSERT|EXEC sp_executesql N'INSERT)(\s+INTO)?\s+([^\(\s]+)\s*|^\s*update\s+([^\(\s]+)\s*/i
+            Regexp.last_match[3] || Regexp.last_match[4]
+          elsif sql =~ /FROM\s+([^\(\s]+)\s*/i
+            Regexp.last_match[1]
+          else
+            nil
+          end
+        end
 
         def get_table_name(sql)
-          tn = if sql =~ /^\s*(INSERT|EXEC sp_executesql N'INSERT)(\s+INTO)?\s+([^\(\s]+)\s*|^\s*update\s+([^\(\s]+)\s*/i
-                 Regexp.last_match[3] || Regexp.last_match[4]
-               elsif sql =~ /FROM\s+([^\(\s]+)\s*/i
-                 Regexp.last_match[1]
-               else
-                 nil
-               end
+          tn = get_table_name_from_sql(sql)
           SQLServer::Utils.extract_identifiers(tn).object
+        end
+
+        def get_fully_qualified_table_name(sql)
+          tn = get_table_name_from_sql(sql)
+          SQLServer::Utils.extract_identifiers(tn).quoted
         end
 
         def default_constraint_name(table_name, column_name)
